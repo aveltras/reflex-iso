@@ -1,0 +1,14 @@
+:set prompt "\ESC[34mλ> \ESC[m"
+
+:set -no-user-package-db
+:set -ghci-script
+:set -fwarn-redundant-constraints
+:set -fprint-potential-instances
+:set -Wall
+
+:set -isrc/common
+:set -isrc/server
+:set -isrc/client
+:load Client Server
+import qualified Client
+import qualified Server
