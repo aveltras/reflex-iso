@@ -110,7 +110,7 @@ htmlW ::
   , PostBuild t m
   ) => Bool -> m ()
 htmlW b = do
-  _ePb <- getPostBuild
+  ePb <- getPostBuild
   el "html" $ do
     el "title" $ text "blabla title2"
     if b
@@ -119,8 +119,11 @@ htmlW b = do
     el "body" $ do
       el "div" $ text "body"
       eButton <- button "tac"
-      eResp <- getResponse ((RequestG1) <$ eButton)
-      _ <- widgetHold (text "Waiting for Response1") ((\b -> text ("Length is: " <> (pack . show . not $ b))) <$> eResp)
+      eResp <- getResponse ((RequestG1) <$ ePb)
+      _ <- widgetHold (text "Waiting for Loading") ((\b -> text ("Length (prerender) is: " <> (pack . show . not $ b))) <$> eResp)
+      eButton <- button "call websocket"
+      eResp2 <- getResponse ((RequestG1) <$ eButton)
+      _ <- widgetHold (text "Waiting for Websocket") ((\b -> text ("Length (websocket) is: " <> (pack . show . not $ b))) <$> eResp2)
       blank
 
 deriveJSONGADT ''RequestG
