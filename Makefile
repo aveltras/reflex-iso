@@ -5,8 +5,9 @@ BUILD_DIR_APP = $(BUILD_DIR)/app
 BUILD_DIR_GHC = $(BUILD_DIR)/ghc
 
 ATTR=ghc
+PACKAGE=Server
 
-GHCID_ = $(SHELL_) --run 'ghcid --command "ghci" -W --test Server.main --output=$(DIR)/ghcid.txt'
+GHCID_ = $(SHELL_) --run 'ghcid --command "ghci" -W --test $(PACKAGE).main --output=$(DIR)/ghcid.txt'
 SHELL_ = nix-shell .nix/default.nix \
 							--add-root $(BUILD_DIR_GHC)/gc-roots/gc-root \
 							--indirect \
@@ -24,6 +25,12 @@ shell-js:
 	@echo "Entering GHCJS shell.."
 	$(SHELL_)
 
-ghcid:
+ghcid-client: PACKAGE=Client
+ghcid-client:
+	@echo "Starting Ghcid.."
+	$(GHCID_)
+
+ghcid-server: PACKAGE=Server
+ghcid-server:
 	@echo "Starting Ghcid.."
 	$(GHCID_)

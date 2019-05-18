@@ -21,14 +21,9 @@
 {-# LANGUAGE TypeOperators #-}
 module Common where
 
-import Data.Dependent.Sum(DSum(..), (==>))
-import qualified Data.Aeson.Parser as AesonParser
-import qualified Data.Attoparsec as LA
 import Data.Aeson.GADT.TH
 import Data.Functor.Identity (Identity(..))
-import Data.Proxy (Proxy(..))
 import Data.Aeson
-import Control.Applicative (Const)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Fix (MonadFix)
 import GHCJS.DOM.Types (MonadJSM)
@@ -95,29 +90,6 @@ withWebSocketDataSource url _eClose _reconnect h w = mdo
         Nothing         -> Nothing :: Maybe (Int, Value)
         Just (val, rst) -> Just (val, rst)
 
-
-
-  -- let
-  --   eSend :: Event t [Maybe Value]
-  --   eSend = (fmap . fmap) (\(_reqKey :=> req) -> Just $ toJSON req) (requesterDataToList <$> eRequest)
-  -- (val, eRequest) <- runRequesterT w eResponse
-  -- (_eRawRequest, eResponse) <- matchResponsesWithRequests undefined eRequest (decodeRequesterRes <$> _webSocket_recv ws)
-  -- ws <- jsonWebSocket url $ WebSocketConfig eSend eClose reconnect []
-  -- return val
-
-    -- decodeRequesterRes :: Maybe Value -> (Int, Maybe Value)
-    -- decodeRequesterRes mValue = undefined
-
-  --   decodeValue :: (FromJSON (req x), FromJSON x) => Maybe Value -> Identity x
-  --   decodeValue Nothing = error "error"
-  --   decodeValue (Just v) = 
-  --     case fromJSON v of
-  --       Error s -> error s
-  --       Success a -> a
-
-  --   decoder :: forall req x. (FromJSON x) => (req x) -> (Maybe Value, Maybe Value -> Identity x)
-  --   decoder req = (Just $ toJSON req, decodeValue)
-
 getResponse
   :: (HasDataSource t req m)
   => Event t (req x) -> m (Event t x)
@@ -130,14 +102,14 @@ htmlW ::
   , MonadHold t m
   , HasDataSource t RequestG m
   , PostBuild t m
-  ) => Bool -> m ()
-htmlW b = do
+  ) => m ()
+htmlW = do
   ePb <- getPostBuild
   el "html" $ do
     el "title" $ text "blabla title2"
-    if b
-      then elAttr "script" ("src" =: "jsaddle.js") $ blank
-      else blank
+    -- if b
+    --   then elAttr "script" ("src" =: "jsaddle.js") $ blank
+    --   else blank
     el "body" $ do
       el "div" $ text "body"
       eResp <- getResponse ((RequestG1) <$ ePb)

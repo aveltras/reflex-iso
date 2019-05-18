@@ -1,6 +1,7 @@
 # reflex-iso
 
 ```
-make ghcid
+make ghcid-server
+make ghcid-client
 ```
-^ to get in the REPL
+^ to start the server and the client (jsaddle-warp)

@@ -14,7 +14,6 @@ module Server where
 
 import Common
 
-import Data.Aeson
 import qualified Data.ByteString as BS
 import Data.Functor.Identity (Identity(..))
 import Language.Javascript.JSaddle.WebSockets
@@ -32,17 +31,7 @@ import Data.Text (Text)
 main :: IO ()
 main = do
   putStrLn "server"
-  W.run 8080 =<< jsaddleOr defaultConnectionOptions (mainWidget' $ withWebSocketDataSource "http://localhost:8080" never True decodeRes $ htmlW False) (websocketsOr defaultConnectionOptions wsApp app)
-  -- W.run 8080 =<< jsaddleOr defaultConnectionOptions (mainWidget' $ el "h1" $ text "tac") (websocketsOr defaultConnectionOptions wsApp app)
-
-decodeRes :: RequestG a -> (Value, Value -> Identity a)
-decodeRes = \case
-  req@RequestG1 -> (toJSON req, (Identity . fromResult) <$> fromJSON)
-  req@(RequestG2 int) -> (toJSON req, (Identity . fromResult) <$> fromJSON)
-
-fromResult :: Result y -> y
-fromResult (Success a) = a
-fromResult _           = error "decoding error"
+  W.run 8080 (websocketsOr defaultConnectionOptions wsApp app)
 
 wsApp :: ServerApp
 wsApp pending_conn = do
@@ -55,7 +44,7 @@ app req respond = do
   case (requestMethod req, pathInfo req) of
     ("GET", ["jsaddle.js"]) -> respond $ responseLBS status200 [("Content-Type", "application/javascript")] (jsaddleJs False)
     _ -> do
-      bs <- renderFrontend $ withLocalDataSource handler $ htmlW True
+      bs <- renderFrontend $ withLocalDataSource handler htmlW
       -- bs <- renderFrontend staticW
       respond $ responseLBS
         status200
@@ -66,7 +55,7 @@ app req respond = do
 handler :: RequestG a -> IO (Identity a)
 handler = \case
   RequestG1 -> return $ Identity True
-  RequestG2 int -> return $ Identity "test"
+  RequestG2 _int -> return $ Identity "test"
 
 renderFrontend ::
   ( t ~ DomTimeline
