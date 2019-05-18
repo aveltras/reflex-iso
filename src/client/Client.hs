@@ -11,10 +11,6 @@ import Common
 
 main :: IO ()
 main = do
-  mainWidget $ withWebSocketDataSource "http://localhost:8080" never True decodeRes htmlW
+  mainWidget $ withWebSocketDataSource "http://localhost:8080" never True decodeRes $ htmlW False
 
-decodeRes :: RequestG a -> (Value, Value -> Identity a)
-decodeRes = \case
-  req@RequestG1 -> (toJSON req, const (Identity True))
-  req@(RequestG2 _int) -> (toJSON req, const (Identity "text"))
 

@@ -8,6 +8,7 @@ common deps
     base,
     aeson,
     aeson-gadt-th,
+    async,
     bytestring,
     containers,
     ghcjs-dom,

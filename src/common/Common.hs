@@ -84,11 +84,11 @@ withWebSocketDataSource url _eClose _reconnect h w = mdo
     encodeReq :: (Int, Value) -> BS.ByteString
     encodeReq = LBS.toStrict . encode
 
-    decodeTag :: BS.ByteString -> Maybe (Int, Value)
-    decodeTag bs =
-      case decodeStrict bs of
-        Nothing         -> Nothing :: Maybe (Int, Value)
-        Just (val, rst) -> Just (val, rst)
+decodeTag :: BS.ByteString -> Maybe (Int, Value)
+decodeTag bs =
+  case decodeStrict bs of
+    Nothing         -> Nothing :: Maybe (Int, Value)
+    Just (val, rst) -> Just (val, rst)
 
 getResponse
   :: (HasDataSource t req m)
@@ -97,22 +97,29 @@ getResponse req = do
   resp <- requesting req
   return $ (\(Identity b) -> b) <$> resp
 
+
+decodeRes :: RequestG a -> (Value, Value -> Identity a)
+decodeRes = \case
+  req@RequestG1 -> (toJSON req, const (Identity True))
+  req@(RequestG2 _int) -> (toJSON req, const (Identity "text"))
+
 htmlW ::
   ( DomBuilder t m
   , MonadHold t m
   , HasDataSource t RequestG m
   , PostBuild t m
-  ) => m ()
-htmlW = do
-  ePb <- getPostBuild
+  ) => Bool -> m ()
+htmlW b = do
+  _ePb <- getPostBuild
   el "html" $ do
     el "title" $ text "blabla title2"
-    -- if b
-    --   then elAttr "script" ("src" =: "jsaddle.js") $ blank
-    --   else blank
+    if b
+      then elAttr "script" ("src" =: "jsaddle.js") $ blank
+      else blank
     el "body" $ do
       el "div" $ text "body"
-      eResp <- getResponse ((RequestG1) <$ ePb)
+      eButton <- button "tac"
+      eResp <- getResponse ((RequestG1) <$ eButton)
       _ <- widgetHold (text "Waiting for Response1") ((\b -> text ("Length is: " <> (pack . show . not $ b))) <$> eResp)
       blank
 
