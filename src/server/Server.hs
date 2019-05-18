@@ -32,8 +32,17 @@ import Data.Text (Text)
 main :: IO ()
 main = do
   putStrLn "server"
-  -- W.run 8080 =<< jsaddleOr defaultConnectionOptions (mainWidget' $ withWebSocketDataSourceG "http://localhost:8080" never True $ htmlW False) (websocketsOr defaultConnectionOptions wsApp app)
-  W.run 8080 =<< jsaddleOr defaultConnectionOptions (mainWidget' $ el "h1" $ text "tac") (websocketsOr defaultConnectionOptions wsApp app)
+  W.run 8080 =<< jsaddleOr defaultConnectionOptions (mainWidget' $ withWebSocketDataSource "http://localhost:8080" never True decodeRes $ htmlW False) (websocketsOr defaultConnectionOptions wsApp app)
+  -- W.run 8080 =<< jsaddleOr defaultConnectionOptions (mainWidget' $ el "h1" $ text "tac") (websocketsOr defaultConnectionOptions wsApp app)
+
+decodeRes :: RequestG a -> (Value, Value -> Identity a)
+decodeRes = \case
+  req@RequestG1 -> (toJSON req, (Identity . fromResult) <$> fromJSON)
+  req@(RequestG2 int) -> (toJSON req, (Identity . fromResult) <$> fromJSON)
+
+fromResult :: Result y -> y
+fromResult (Success a) = a
+fromResult _           = error "decoding error"
 
 wsApp :: ServerApp
 wsApp pending_conn = do

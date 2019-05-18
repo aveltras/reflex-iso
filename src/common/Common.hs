@@ -22,6 +22,8 @@
 module Common where
 
 import Data.Dependent.Sum(DSum(..), (==>))
+import qualified Data.Aeson.Parser as AesonParser
+import qualified Data.Attoparsec as LA
 import Data.Aeson.GADT.TH
 import Data.Functor.Identity (Identity(..))
 import Data.Proxy (Proxy(..))
@@ -58,14 +60,10 @@ withLocalDataSource h w = mdo
   eResponse <- performEvent $ liftIO . (traverseRequesterData h) <$> eRequest
   return val
 
-withWebSocketDataSource :: forall t m req x a.
+withWebSocketDataSource :: forall t m req a.
   ( HasJSContext m
   , MonadFix m
   , MonadJSM (Performable m)
-  , ToJSON (req x)
-  , FromJSON (req x)
-  , ToJSON x
-  , FromJSON x
   , MonadJSM m
   , MonadHold t m
   , PerformEvent t m 
@@ -74,31 +72,30 @@ withWebSocketDataSource :: forall t m req x a.
   => Text -- WebSocket URL
   -> Event t (Word, Text) -- close event
   -> Bool -- reconnect on close
+  -> (forall b. req b -> (Value, Value -> Identity b))
   -> WithDataSource t req m a -- widget
   -> m a
-withWebSocketDataSource url _eClose _reconnect w = mdo
+withWebSocketDataSource url _eClose _reconnect h w = mdo
   let
     wsConfig = def & webSocketConfig_send .~ eSend
     eSend = (fmap . fmap) encodeReq (toList <$> eMapRawRequest) :: Event t [BS.ByteString]
   (val, eRequest) <- runRequesterT w eResponse
-  (eMapRawRequest, eResponse) <- matchResponsesWithRequests decodeRes eRequest (fmapMaybe decodeTag (_webSocket_recv ws))
+  (eMapRawRequest, eResponse) <- matchResponsesWithRequests h eRequest (fmapMaybe decodeTag (_webSocket_recv ws))
   ws <- webSocket url wsConfig
   return val
 
   where
 
-    encodeReq :: (Int, BS.ByteString) -> BS.ByteString
-    encodeReq = undefined
+    encodeReq :: (Int, Value) -> BS.ByteString
+    encodeReq = LBS.toStrict . encode
 
-    decodeTag :: BS.ByteString -> Maybe (Int, BS.ByteString)
-    -- decodeTag = undefined
+    decodeTag :: BS.ByteString -> Maybe (Int, Value)
     decodeTag bs =
       case decodeStrict bs of
-        Nothing         -> Nothing :: Maybe (Int, BS.ByteString)
-        Just (tag, val) -> Just (tag, val)
+        Nothing         -> Nothing :: Maybe (Int, Value)
+        Just (val, rst) -> Just (val, rst)
 
-    decodeRes :: (forall b. req b -> (BS.ByteString, BS.ByteString -> Identity b))
-    decodeRes = undefined
+
 
   -- let
   --   eSend :: Event t [Maybe Value]

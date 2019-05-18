@@ -8,6 +8,7 @@ common deps
     base,
     aeson,
     aeson-gadt-th,
+    attoparsec,
     bytestring,
     containers,
     dependent-sum,
