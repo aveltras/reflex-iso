@@ -77,21 +77,27 @@ withWebSocketDataSource :: forall t m req x a.
   -> WithDataSource t req m a -- widget
   -> m a
 withWebSocketDataSource url _eClose _reconnect w = mdo
+  let
+    wsConfig = def & webSocketConfig_send .~ eSend
+    eSend = (fmap . fmap) encodeReq (toList <$> eMapRawRequest) :: Event t [BS.ByteString]
   (val, eRequest) <- runRequesterT w eResponse
   (eMapRawRequest, eResponse) <- matchResponsesWithRequests decodeRes eRequest (fmapMaybe decodeTag (_webSocket_recv ws))
-  ws <- jsonWebSocket url $ def & webSocketConfig_send .~ (toList <$> eMapRawRequest) :: m (RawWebSocket t (Maybe (Int, x)))
+  ws <- webSocket url wsConfig
   return val
 
   where
 
-    decodeTag :: Value -> Maybe (Int, Value)
-    decodeTag = undefined
-    -- decodeTag bs =
-    --   case decodeStrict bs of
-    --     Nothing         -> Nothing :: Maybe (Int, Value)
-    --     Just (tag, val) -> Just (tag, val)
+    encodeReq :: (Int, BS.ByteString) -> BS.ByteString
+    encodeReq = undefined
 
-    decodeRes :: (forall b. (ToJSON (req b), ToJSON b) => req b -> (Value, Value -> Identity b))
+    decodeTag :: BS.ByteString -> Maybe (Int, BS.ByteString)
+    -- decodeTag = undefined
+    decodeTag bs =
+      case decodeStrict bs of
+        Nothing         -> Nothing :: Maybe (Int, BS.ByteString)
+        Just (tag, val) -> Just (tag, val)
+
+    decodeRes :: (forall b. req b -> (BS.ByteString, BS.ByteString -> Identity b))
     decodeRes = undefined
 
   -- let
