@@ -33,9 +33,6 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 import Data.Map.Strict (toList)
 
-main :: String
-main = "common"
-
 type HasDataSource t req m = (Requester t m, Request m ~ req, Response m ~ Identity)
 type WithDataSource t req m = RequesterT t req Identity m
 
@@ -115,15 +112,15 @@ htmlW b = do
     el "title" $ text "blabla title2"
     if b
       then elAttr "script" ("src" =: "jsaddle.js") $ blank
-      else blank
+      -- else blank
+      else elAttr "script" ("src" =: "all.js") $ blank
     el "body" $ do
       el "div" $ text "body"
-      eButton <- button "tac"
       eResp <- getResponse ((RequestG1) <$ ePb)
-      _ <- widgetHold (text "Waiting for Loading") ((\b -> text ("Length (prerender) is: " <> (pack . show . not $ b))) <$> eResp)
+      _ <- widgetHold (text "Waiting for Loading") ((\b2 -> text ("Length (prerender) is: " <> (pack . show $ b2))) <$> eResp)
       eButton <- button "call websocket"
       eResp2 <- getResponse ((RequestG1) <$ eButton)
-      _ <- widgetHold (text "Waiting for Websocket") ((\b -> text ("Length (websocket) is: " <> (pack . show . not $ b))) <$> eResp2)
+      _ <- widgetHold (text "Waiting for Websocket") ((\b2 -> text ("Length (websocket) is: " <> (pack . show $ b2))) <$> eResp2)
       blank
 
 deriveJSONGADT ''RequestG

@@ -9,6 +9,6 @@
 :set -isrc/common
 :set -isrc/server
 :set -isrc/client
-:load Client Server
+:load Main Server
 import qualified Client
 import qualified Server

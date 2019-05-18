@@ -20,6 +20,9 @@ reflex-platform.project ({ pkgs, ... }: {
       };
     in 
       (self: super:{
+        # silently = pkgs.haskell.lib.dontCheck super.silently;
+        # markdown-unlit = pkgs.haskell.lib.dontCheck super.markdown-unlit;
+        # aeson-gadt-th = pkgs.haskell.lib.dontCheck (self.callCabal2nix "aeson-gadt-th" "${aeson-gadt-th}" {});
         aeson-gadt-th = self.callCabal2nix "aeson-gadt-th" "${aeson-gadt-th}" {};
       });
 

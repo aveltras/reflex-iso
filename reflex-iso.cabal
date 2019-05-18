@@ -8,11 +8,9 @@ common deps
     base,
     aeson,
     aeson-gadt-th,
-    async,
     bytestring,
     containers,
     ghcjs-dom,
-    http-types,
     reflex-dom,
     text,
   ghc-options: -Wall
@@ -32,15 +30,18 @@ executable server
   hs-source-dirs: src/server
   build-depends:
     reflex-iso,
+    async,
+    http-types,
     jsaddle-warp,
     wai,
+    wai-middleware-static,
     wai-websockets,
     warp,
     websockets
 
 executable client
   import: deps
-  main-is: Client.hs
+  main-is: Main.hs
   hs-source-dirs: src/client
   build-depends:
     reflex-iso
