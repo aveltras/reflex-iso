@@ -9,10 +9,14 @@ common deps
     aeson,
     aeson-gadt-th,
     bytestring,
+    constraints-extras,
     containers,
+    dependent-map,
     ghcjs-dom,
+    haskus-utils-variant,
     reflex-dom,
     text,
+    vinyl
   ghc-options: -Wall
   default-language: Haskell2010
 

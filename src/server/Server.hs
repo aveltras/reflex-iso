@@ -15,13 +15,14 @@ module Server where
 import Common
 
 import Data.Aeson
-import Control.Monad.IO.Class (liftIO)
+-- import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
-import Data.Functor.Identity (Identity(..))
+-- import Data.Functor.Identity (Identity(..))
 import Language.Javascript.JSaddle.WebSockets
 import Network.HTTP.Types
 import Network.WebSockets (acceptRequest, ServerApp, sendBinaryData, receiveData, forkPingThread)
 import Network.Wai
+import Data.Dependent.Map (DMap, Some(..))
 import Control.Monad (forever)
 import Network.Wai.Handler.WebSockets (websocketsOr)
 import Network.WebSockets (defaultConnectionOptions)
@@ -32,6 +33,8 @@ import qualified Network.Wai.Handler.Warp as W
 import Data.Text (Text)
 import Control.Concurrent.Async (concurrently_)
 import Network.Wai.Middleware.Static
+import Haskus.Utils.Variant
+import Haskus.Utils.ContFlow
 
 main :: IO ()
 main = do
@@ -41,7 +44,7 @@ main = do
     then concurrently_ jsaddle wsServer
     else concurrently_ (W.run 8081 $ mainApp False) wsServer
   where
-    jsaddle = debugOr 8081 (mainWidget' $ withWebSocketDataSource "ws://localhost:8080" never True decodeRes $ htmlW False) (mainApp False)
+    jsaddle = debugOr 8081 (mainWidget' $ withWebSocketDataSource "ws://localhost:8080" never True $ htmlW False) (mainApp False)
     mainApp b = staticPolicy (addBase "static") (app b)
     wsServer = W.run 8080 (websocketsOr defaultConnectionOptions wsApp backupApp)
 
@@ -60,19 +63,16 @@ wsApp pending_conn = do
 
       case decodeTag bsReq of
         Just (int, val) -> do
-          let resp = encode (int, True)
-          print $ "Response: " <> (show resp)
-          sendBinaryData conn resp  -- ("Hello, client!" :: Text)
-        _ -> error "boom"
-          -- print val
-          -- case fromJSON val of
-          --   Error s -> error s
-          --   Success req -> do
-          --     case req of
-          --       RequestG1 -> undefined
-          --       RequestG2 _int -> undefined
-          --     -- resp <- handler req
-          --     return ()
+        --   let resp = encode (int, True)
+        --   print $ "Response: " <> (show resp)
+        --   sendBinaryData conn resp  -- ("Hello, client!" :: Text)
+        -- _ -> do
+          --error "boom"
+          case fromJSON val of
+            Error s -> error s
+            Success (This req) -> do
+              (Just resp) <- handler req
+              sendBinaryData conn $ encode (int, True)
         Nothing -> error "error decoding request"
       return ()
       -- sendBinaryData conn ("Hello, client!" :: Text)
@@ -89,10 +89,20 @@ app b req respond = do
         (LBS.fromStrict bs)
 
 
-handler :: RequestG a -> IO (Identity a)
+-- handlerBis :: IsRequest MyReq req -> IO (IsResponse MyReq req)
+-- -- handlerBis = undefined
+-- handlerBis (IsRequest req) =
+--   case req of
+--     Rq1 -> undefined
+  -- (variantToCont (toVariant @(V MyReq) req)) >::>
+  --   ( \Rq1 -> putStrLn "Found string: "
+  --   , \(Rq2 t) -> putStrLn "Found int: "
+  --   )
+
+handler :: RequestG a -> IO (Maybe a)
 handler = \case
-  RequestG1 -> return $ Identity False
-  RequestG2 _int -> return $ Identity "test"
+  RequestG1 -> return $ Just False
+  RequestG2 _int -> return $ Just "test"
 
 renderFrontend ::
   ( t ~ DomTimeline
