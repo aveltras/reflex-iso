@@ -55,12 +55,6 @@ instance Message Rq2 where
   type ResponseT Rq2 = (Int, Bool)
 
 
--- f :: MyReq -> IO ()
--- f r = variantToCont r >::>
---    ( \Rq1 -> putStrLn "Found string: "
---    , \(Rq2 t) -> putStrLn "Found int: "
---    )
-
 class ( FromJSON req
       , ToJSON req
       , FromJSON (ResponseT req)
@@ -100,7 +94,8 @@ withWebSocketDataSource :: forall t m req a.
   , MonadFix m
   , MonadJSM (Performable m)
   , MonadJSM m
-  , Has ToJSON req
+  , ForallF ToJSON req
+  -- , Has ToJSON req
   , Has FromJSON req
   , MonadHold t m
   , PerformEvent t m 
@@ -126,22 +121,13 @@ withWebSocketDataSource url _eClose _reconnect w = mdo
     encodeReq = LBS.toStrict . encode
 
     decodeRes2 :: forall b. req b -> (Value, Value -> Identity b)
-    decodeRes2 reqG = (has @ToJSON reqG toJSON reqG, f)
+    decodeRes2 reqG = (whichever @ToJSON @req @b toJSON reqG, f)
       where
         f val = do
           let result = has @FromJSON reqG fromJSON val
           case result of
             Error _s -> error "boom"
             Success a -> Identity a
-
-    -- decodeRes2 :: forall req. (IsRequest sum req) -> (Value, Value -> IsResponse sum req)
-    -- decodeRes2 (IsRequest reqG) = (toJSON reqG, f)
-    --   where
-    --     f val = do
-    --       let result = fromJSON val
-    --       case result of
-    --         Error _s -> error "boom"
-    --         Success a -> IsResponse a
 
 decodeTag :: BS.ByteString -> Maybe (Int, Value)
 decodeTag bs =
@@ -175,10 +161,18 @@ htmlW b = do
       eResp <- getResponse ((RequestG1) <$ ePb)
       _ <- widgetHold (text "Waiting for Loading") ((\(b2) -> text ("Length (prerender) is: " <> (pack . show $ b2))) <$> eResp)
       eButton <- button "call websocket"
-      eResp2 <- getResponse ((RequestG1) <$ eButton)
-      _ <- widgetHold (text "Waiting for Websocket") ((\(b2) -> text ("Length (websocket) is: " <> (pack . show $ b2))) <$> eResp2)
+      eResp2 <- getResponse ((RequestG2 5) <$ eButton)
+      _ <- widgetHold (text "Waiting for Websocket") ((\(t) -> text ("Length (websocket) is: " <> t)) <$> eResp2)
       blank
 
+decodeRes2 :: forall b. RequestG b -> (Value, Value -> Identity b)
+decodeRes2 reqG = (toJSON reqG, f)
+  where
+    f val = do
+      let result = has @FromJSON reqG fromJSON val
+      case result of
+        Error _s -> error "boom"
+        Success a -> Identity a
 -- instance ArgDict RequestG where
 --   type ConstraintsFor RequestG c = (c Bool, c Text)
 --   argDict = \case

@@ -17,7 +17,7 @@ import Common
 import Data.Aeson
 -- import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString as BS
--- import Data.Functor.Identity (Identity(..))
+import Data.Functor.Identity (Identity(..))
 import Language.Javascript.JSaddle.WebSockets
 import Network.HTTP.Types
 import Network.WebSockets (acceptRequest, ServerApp, sendBinaryData, receiveData, forkPingThread)
@@ -35,6 +35,11 @@ import Control.Concurrent.Async (concurrently_)
 import Network.Wai.Middleware.Static
 import Haskus.Utils.Variant
 import Haskus.Utils.ContFlow
+import Data.Constraint.Forall
+import Data.Constraint.Extras
+import Data.Constraint.Extras.TH
+import Data.Constraint
+import Data.Text (pack)
 
 main :: IO ()
 main = do
@@ -71,8 +76,9 @@ wsApp pending_conn = do
           case fromJSON val of
             Error s -> error s
             Success (This req) -> do
-              (Just resp) <- handler req
-              sendBinaryData conn $ encode (int, True)
+              resp <- handler req
+              -- print resp
+              sendBinaryData conn $ has @ToJSON req $ encode (int, resp)
         Nothing -> error "error decoding request"
       return ()
       -- sendBinaryData conn ("Hello, client!" :: Text)
@@ -89,6 +95,7 @@ app b req respond = do
         (LBS.fromStrict bs)
 
 
+
 -- handlerBis :: IsRequest MyReq req -> IO (IsResponse MyReq req)
 -- -- handlerBis = undefined
 -- handlerBis (IsRequest req) =
@@ -99,10 +106,10 @@ app b req respond = do
   --   , \(Rq2 t) -> putStrLn "Found int: "
   --   )
 
-handler :: RequestG a -> IO (Maybe a)
+handler :: RequestG a -> IO (Identity a)
 handler = \case
-  RequestG1 -> return $ Just False
-  RequestG2 _int -> return $ Just "test"
+  RequestG1 -> return $ Identity False
+  RequestG2 int -> return $ Identity $ (pack . show) (int + 2)
 
 renderFrontend ::
   ( t ~ DomTimeline
